@@ -44,14 +44,15 @@ public class Server {
                 DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
                 String inputLine;
                 String[] words;
-                boolean shutdown = false;
+                boolean disconnected = false;
                 String options = """
-                        Your options:
+                        Server options:
                         1. Provide words to find
                         2. Check index status
-                        3. Disconnect""";
+                        3. See options
+                        4. Disconnect""";
                 dos.writeUTF(options);
-                while (!shutdown) {
+                while (!disconnected) {
                     inputLine = dis.readUTF();
                     switch (inputLine) {
                         case "1" -> {
@@ -63,6 +64,10 @@ public class Server {
                             dos.writeUTF(isIndexReady ? "Index is populated and ready for use." : "Index is empty.");
                         }
                         case "3" -> {
+                            dos.writeUTF(options);
+                        }
+                        case "4" -> {
+                            disconnected = true;
                             dos.writeUTF("Disconnected.");
                         }
                         default -> dos.writeUTF("Unknown option");
