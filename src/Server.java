@@ -3,13 +3,21 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Server {
     private ServerSocket serverSocket;
-    private static Boolean isIndexReady = false;
+    private AtomicBoolean isIndexReady;
+    private final InvertedIndex index;
+
+    public Server() {
+        this.index = new InvertedIndex();
+        this.isIndexReady = new AtomicBoolean(false);
+    }
 
     public void start(int port) {
         try {
+            (new Thread(new IndexFiller(index, null, isIndexReady))).start();
             serverSocket = new ServerSocket(port);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -30,7 +38,7 @@ public class Server {
         }
     }
 
-    private static class ClientHandler implements Runnable {
+    private class ClientHandler implements Runnable {
         private final Socket clientSocket;
 
         ClientHandler(Socket socket) {
@@ -61,7 +69,8 @@ public class Server {
                             dos.writeUTF("Result: " + String.join(" ", words));
                         }
                         case "2" -> {
-                            dos.writeUTF(isIndexReady ? "Index is populated and ready for use." : "Index is empty.");
+                            dos.writeUTF(
+                                    isIndexReady.get() ? "Index is populated and ready for use." : "Index is empty.");
                         }
                         case "3" -> {
                             dos.writeUTF(options);
