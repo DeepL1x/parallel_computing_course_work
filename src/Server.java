@@ -17,7 +17,7 @@ public class Server {
 
     public void start(int port) {
         try {
-            (new Thread(new IndexFiller(index, null, isIndexReady))).start();
+            (new Thread(new IndexFiller(index, "files", isIndexReady))).start();
             serverSocket = new ServerSocket(port);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -65,19 +65,27 @@ public class Server {
                     switch (inputLine) {
                         case "1" -> {
                             dos.writeUTF("Enter separated by space words to find:");
-                            words = dis.readUTF().split(" ");
-                            dos.writeUTF("Result: " + String.join(" ", words));
+                            words = dis.readUTF().split("\\W");
+                            if (!isIndexReady.get()) {
+                                dos.writeUTF("Index is not ready yet.");
+                                break;
+                            }
+                            dos.writeUTF("Result: " + index.get(words).keySet().toString());
+                            break;
                         }
                         case "2" -> {
                             dos.writeUTF(
                                     isIndexReady.get() ? "Index is populated and ready for use." : "Index is empty.");
+                            break;
                         }
                         case "3" -> {
                             dos.writeUTF(options);
+                            break;
                         }
                         case "4" -> {
                             disconnected = true;
                             dos.writeUTF("Disconnected.");
+                            break;
                         }
                         default -> dos.writeUTF("Unknown option");
                     }
