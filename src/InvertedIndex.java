@@ -62,7 +62,7 @@ public class InvertedIndex {
             int hash = hash(word);
             for (Entry entry : buckets[hash % buckets.length]) {
                 if (entry.getWord().equals(word)) {
-                    entry.addFilePosition(filename, wordPosition);
+                    entry.addWordPosition(filename, wordPosition);
                     return;
                 }
             }
@@ -144,7 +144,7 @@ public class InvertedIndex {
             return files;
         }
 
-        public void addFilePosition(String filename, Integer wordPosition) {
+        public void addWordPosition(String filename, Integer wordPosition) {
             Set<Integer> postions = this.files.get(filename);
             if (postions == null) {
                 postions = new HashSet<>();
