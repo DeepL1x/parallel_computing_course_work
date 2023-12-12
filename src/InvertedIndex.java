@@ -73,17 +73,51 @@ public class InvertedIndex {
         }
     }
 
-    public Map<String, Set<Integer>> get(String key) {
-        lock.readLock().lock();
-        int hash = hash(key);
-        for (Entry entry : buckets[hash % buckets.length]) {
-            if (entry.getWord().equals(key)) {
-                lock.readLock().unlock();
-                return entry.getFiles();
+    public Map<String, Set<Integer>> get(String[] keys) {
+        try {
+            lock.readLock().lock();
+            Map<String, Set<Integer>> result = new HashMap<>();
+
+            if (keys.length > 0) {
+                int hash = hash(keys[0]);
+                for (Entry entry : buckets[hash % buckets.length]) {
+                    if (entry.getWord().equals(keys[0])) {
+                        result.putAll(entry.getFiles());
+                    }
+                }
+                for (int i = 1; i < keys.length; i++) {
+                    hash = hash(keys[i]);
+                    for (Entry entry : buckets[hash % buckets.length]) {
+                        if (entry.getWord().equals(keys[i])) {
+                            processWord(result, entry.getFiles());
+                        }
+                    }
+                }
+            }
+            return result;
+        } finally {
+            lock.readLock().unlock();
+        }
+
+    }
+
+    private void processWord(Map<String, Set<Integer>> prevRes, Map<String, Set<Integer>> curFiles) {
+        Set<String> commonKeys = prevRes.keySet();
+        commonKeys.retainAll(curFiles.keySet());
+        Map<String, Set<Integer>> newRes = new HashMap<>();
+        for (String file : commonKeys) {
+            Set<Integer> curWordsPositions = new HashSet<>();
+            for (Integer pos : curFiles.get(file)) {
+                if (prevRes.get(file).contains(pos - 1)) {
+                    curWordsPositions.add(pos);
+                }
+            }
+            if (curWordsPositions.size() > 0) {
+                newRes.put(file, curWordsPositions);
             }
         }
-        lock.readLock().unlock();
-        return null;
+        prevRes.clear();
+        prevRes.putAll(newRes);
     }
 
     private int hash(String key) {
