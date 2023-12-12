@@ -23,7 +23,7 @@ public class IndexFiller implements Runnable {
         this.index = index;
         this.threadsAmount = DEF_THREADS_AMOUNT;
         this.isIndexReady = isIndexReady;
-        this.files = FileUtils.getFiles("files");
+        this.files = FileUtils.getFiles(filename);
         fillIndex();
     }
 
@@ -61,7 +61,6 @@ public class IndexFiller implements Runnable {
                 Future<Void> future = completionService.poll(1, TimeUnit.MINUTES);
                 if (future != null) {
                     future.get();
-                    System.out.println("get");
                 }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -80,9 +79,8 @@ public class IndexFiller implements Runnable {
                     String[] words = line.split("\\W");
                     for (String word : words) {
                         if (!word.isEmpty()) {
-                            System.out.println(word + " " + file.getName() + " " + wordPosition);
-                            ;
                             index.put(word, file.getName(), wordPosition);
+                            wordPosition++;
                         }
                     }
                 }
