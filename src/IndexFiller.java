@@ -13,18 +13,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IndexFiller implements Runnable {
-    private InvertedIndex index;
-    private List<File> files;
+    private final InvertedIndex index;
+    private final List<File> files;
     private static final Integer DEF_THREADS_AMOUNT = 4;
-    private Integer threadsAmount;
-    private AtomicBoolean isIndexReady;
+    private final Integer threadsAmount;
+    private final AtomicBoolean isIndexReady;
+    private final Boolean saveIndex;
+    private final String indexPath;
 
     public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady) {
         this.index = index;
         this.threadsAmount = DEF_THREADS_AMOUNT;
         this.isIndexReady = isIndexReady;
         this.files = FileUtils.getFiles(filename);
-        fillIndex();
+        this.saveIndex = false;
+        this.indexPath = "";
     }
 
     public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady, Integer threadsAmount) {
@@ -32,7 +35,18 @@ public class IndexFiller implements Runnable {
         this.threadsAmount = threadsAmount;
         this.isIndexReady = isIndexReady;
         this.files = FileUtils.getFiles("files");
-        fillIndex();
+        this.saveIndex = false;
+        this.indexPath = "";
+    }
+
+    public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady, Integer threadsAmount,
+            Boolean saveIndex, String indexPath) {
+        this.index = index;
+        this.threadsAmount = threadsAmount;
+        this.isIndexReady = isIndexReady;
+        this.files = FileUtils.getFiles("files");
+        this.saveIndex = saveIndex;
+        this.indexPath = indexPath;
     }
 
     @Override
@@ -48,26 +62,40 @@ public class IndexFiller implements Runnable {
             step = 1;
         }
         int tasksSubmitted = 0;
-        for (int i = 0; i < threadsAmount; i++) {
-            int start = i * step;
-            int end = (i + 1) * step;
-            if (end <= files.size()) {
-                completionService.submit(() -> fillIndexTask(files.subList(start, end)), null);
-                tasksSubmitted++;
-            }
-        }
-        for (int i = 0; i < tasksSubmitted; i++) {
-            try {
-                Future<Void> future = completionService.poll(1, TimeUnit.MINUTES);
-                if (future != null) {
-                    future.get();
+        double time, start, end;
+        start = System.nanoTime();
+        if (threadsAmount <= 1) {
+            fillIndexTask(files);
+            end = System.nanoTime();
+        } else {
+            for (int i = 0; i < threadsAmount; i++) {
+                int filesFrom = i * step;
+                int filesTo = (i + 1) * step;
+                if (filesTo <= files.size()) {
+                    completionService.submit(() -> fillIndexTask(files.subList(filesFrom, filesTo)), null);
+                    tasksSubmitted++;
                 }
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
             }
+            for (int i = 0; i < tasksSubmitted; i++) {
+                try {
+                    Future<Void> future = completionService.poll(1, TimeUnit.MINUTES);
+                    if (future != null) {
+                        future.get();
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+            end = System.nanoTime();
         }
+        time = (end - start) / 1e6;
+        System.out.println("Index filled in " + time + " ms");
         isIndexReady.set(true);
         executor.shutdown();
+
+        if (saveIndex) {
+            FileUtils.saveObject(index, indexPath);
+        }
     }
 
     private void fillIndexTask(List<File> files) {

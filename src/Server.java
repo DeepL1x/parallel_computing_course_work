@@ -6,25 +6,75 @@ import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Server {
+    private static final int DEF_THREADS_AMOUNT = 4;
     private ServerSocket serverSocket;
     private AtomicBoolean isIndexReady;
-    private final InvertedIndex index;
+    private InvertedIndex index;
+    private final int fillerThreadsAmount;
+    private final boolean loadIndex;
+    private final boolean saveIndex;
 
     public Server() {
+        this(DEF_THREADS_AMOUNT, false, false);
+    }
+
+    public Server(int fillerThreadsAmount) {
+        this(fillerThreadsAmount, false, false);
+    }
+
+    public Server(boolean loadIndex) {
+        this(DEF_THREADS_AMOUNT, loadIndex, false);
+    }
+
+    public Server(int fillerThreadsAmount, boolean saveIndex) {
         this.index = new InvertedIndex();
         this.isIndexReady = new AtomicBoolean(false);
+        this.fillerThreadsAmount = fillerThreadsAmount;
+        this.loadIndex = false;
+        this.saveIndex = saveIndex;
+    }
+
+    /**
+     * Universal constructor that resolves conflicts between loadIndex and saveIndex
+     * params
+     * 
+     * @param fillerThreadsAmount - amount of threads that will fill the index
+     * @param loadIndex           - if true, the index will be loaded from file
+     * @param saveIndex           - if true the index will be saved to file
+     */
+    public Server(int fillerThreadsAmount, boolean loadIndex, boolean saveIndex) {
+        this.index = new InvertedIndex();
+        this.isIndexReady = new AtomicBoolean(false);
+        this.fillerThreadsAmount = fillerThreadsAmount;
+        if (loadIndex) {
+            this.loadIndex = true;
+            this.saveIndex = false;
+        } else if (saveIndex) {
+            this.loadIndex = false;
+            this.saveIndex = true;
+        } else {
+            this.loadIndex = false;
+            this.saveIndex = false;
+        }
     }
 
     public void start(int port) {
         try {
-            (new Thread(new IndexFiller(index, "files", isIndexReady))).start();
+            if (loadIndex) {
+                (new Thread(() -> FileUtils.loadIndex(index, "savedIndex/index.ser", isIndexReady))).start();
+            } else {
+                (new Thread(new IndexFiller(index,
+                        "files", isIndexReady,
+                        fillerThreadsAmount,
+                        saveIndex,
+                        "savedIndex/index.ser"))).start();
+            }
             serverSocket = new ServerSocket(port);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 (new Thread(new ClientHandler(clientSocket))).start();
                 System.out.println("New client " + clientSocket);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -71,7 +121,7 @@ public class Server {
                                 break;
                             }
                             dos.writeUTF("Result: " + index.get(words).keySet().toString());
-                            break;
+                                break;
                         }
                         case "2" -> {
                             dos.writeUTF(

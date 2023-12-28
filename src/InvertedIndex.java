@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -7,14 +8,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class InvertedIndex {
-    private static final int DEF_INIT_CAP = 16;
+public class InvertedIndex implements Serializable {
+    private static final int DEF_INIT_CAP = 96;
     private static final float DEF_LOAD_FACTOR = 0.75f;
 
     private List<Entry>[] buckets;
     private int size;
-    private float loadFactor;
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final float loadFactor;
+    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public InvertedIndex() {
         this(DEF_INIT_CAP, DEF_LOAD_FACTOR);
@@ -34,6 +35,22 @@ public class InvertedIndex {
             this.buckets[i] = new ArrayList<>();
         }
         this.loadFactor = loadFactor;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public int getSize() {
+        return this.size;
+    }
+
+    public List<Entry>[] getBuckets() {
+        return this.buckets;
+    }
+
+    public void setBuckets(List<Entry>[] buckets) {
+        this.buckets = buckets;
     }
 
     private void resizeIfNeeded() {
@@ -67,6 +84,7 @@ public class InvertedIndex {
                 }
             }
             buckets[hash % buckets.length].add(new Entry(word, filename, wordPosition));
+            size++;
 
         } finally {
             lock.writeLock().unlock();
@@ -124,7 +142,18 @@ public class InvertedIndex {
         return Math.abs(key.hashCode());
     }
 
-    private static class Entry {
+    // private void writeObject(ObjectOutputStream out) throws IOException {
+    // out.defaultWriteObject();
+    // out.writeObject(buckets);
+    // }
+
+    // private void readObject(ObjectInputStream in) throws IOException,
+    // ClassNotFoundException {
+    // in.defaultReadObject();
+    // buckets = (List<Entry>[]) in.readObject();
+    // }
+
+    private static class Entry implements Serializable {
         private final String word;
         private Map<String, Set<Integer>> files;
 
