@@ -22,21 +22,11 @@ public class IndexFiller implements Runnable {
     private final String indexPath;
 
     public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady) {
-        this.index = index;
-        this.threadsAmount = DEF_THREADS_AMOUNT;
-        this.isIndexReady = isIndexReady;
-        this.files = FileUtils.getFiles(filename);
-        this.saveIndex = false;
-        this.indexPath = "";
+        this(index, filename, isIndexReady, DEF_THREADS_AMOUNT, false, "");
     }
 
     public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady, Integer threadsAmount) {
-        this.index = index;
-        this.threadsAmount = threadsAmount;
-        this.isIndexReady = isIndexReady;
-        this.files = FileUtils.getFiles("files");
-        this.saveIndex = false;
-        this.indexPath = "";
+        this(index, filename, isIndexReady, threadsAmount, false, "");
     }
 
     public IndexFiller(InvertedIndex index, String filename, AtomicBoolean isIndexReady, Integer threadsAmount,

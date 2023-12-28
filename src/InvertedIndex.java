@@ -10,7 +10,7 @@ import java.util.HashSet;
 
 public class InvertedIndex implements Serializable {
     private static final int DEF_INIT_CAP = 96;
-    private static final float DEF_LOAD_FACTOR = 0.75f;
+    private static final float DEF_LOAD_FACTOR = 2.25f;
 
     private List<Entry>[] buckets;
     private int size;
@@ -85,7 +85,6 @@ public class InvertedIndex implements Serializable {
             }
             buckets[hash % buckets.length].add(new Entry(word, filename, wordPosition));
             size++;
-
         } finally {
             lock.writeLock().unlock();
         }
