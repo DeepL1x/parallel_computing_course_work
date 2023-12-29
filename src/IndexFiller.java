@@ -61,10 +61,17 @@ public class IndexFiller implements Runnable {
             for (int i = 0; i < threadsAmount; i++) {
                 int filesFrom = i * step;
                 int filesTo = (i + 1) * step;
-                if (filesTo <= files.size()) {
-                    completionService.submit(() -> fillIndexTask(files.subList(filesFrom, filesTo)), null);
-                    tasksSubmitted++;
+                if (filesFrom >= files.size()) {
+                    break;
+                } else if (i == threadsAmount - 1) {
+                    if (filesTo <= files.size()) {
+                        completionService.submit(() -> fillIndexTask(files.subList(filesFrom, files.size())), null);
+                        tasksSubmitted++;
+                        break;
+                    }
                 }
+                completionService.submit(() -> fillIndexTask(files.subList(filesFrom, filesTo)), null);
+                tasksSubmitted++;
             }
             for (int i = 0; i < tasksSubmitted; i++) {
                 try {
