@@ -104,7 +104,7 @@ public class IndexFiller implements Runnable {
                     String[] words = line.split("\\W");
                     for (String word : words) {
                         if (!word.isEmpty()) {
-                            index.put(word, file.getName(), wordPosition);
+                            index.put(word, file.toString(), wordPosition);
                             wordPosition++;
                         }
                     }

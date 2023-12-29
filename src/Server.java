@@ -27,11 +27,7 @@ public class Server {
     }
 
     public Server(int fillerThreadsAmount, boolean saveIndex) {
-        this.index = new InvertedIndex();
-        this.isIndexReady = new AtomicBoolean(false);
-        this.fillerThreadsAmount = fillerThreadsAmount;
-        this.loadIndex = false;
-        this.saveIndex = saveIndex;
+        this(fillerThreadsAmount, false, saveIndex);
     }
 
     /**
