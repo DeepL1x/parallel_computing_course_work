@@ -116,8 +116,14 @@ public class Server {
                                 dos.writeUTF("Index is not ready yet.");
                                 break;
                             }
+                            double time;
+                            long start, end;
+                            start = System.nanoTime();
                             dos.writeUTF("Result: " + index.get(words).keySet().toString());
-                                break;
+                            end = System.nanoTime();
+                            time = (end - start) / 1e6;
+                            System.out.println("Result found in " + time + "ms");
+                            break;
                         }
                         case "2" -> {
                             dos.writeUTF(

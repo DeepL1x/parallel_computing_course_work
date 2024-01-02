@@ -52,7 +52,8 @@ public class IndexFiller implements Runnable {
             step = 1;
         }
         int tasksSubmitted = 0;
-        double time, start, end;
+        double time;
+        long start, end;
         start = System.nanoTime();
         if (threadsAmount <= 1) {
             fillIndexTask(files);
